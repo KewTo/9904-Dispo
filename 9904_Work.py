@@ -39,6 +39,7 @@ def recent_file():
 
 wb = load_workbook(recent_file())
 ws = wb.active
+xw.Book(recent_file())
 Dispo_Dimensions = ws.dimensions
 
 
@@ -65,14 +66,6 @@ def headers(x: str):
     return index
 
 
-def apply_filter():
-    # Filter various headers
-    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('LOT'), Criteria1 := 'BLNK*', Operator := 2, Criteria2 := 'BEUVF*')
-    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('Rack'), 'NOT-IN-FAB')
-    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('DAO'), Criteria1 := '<200')
-    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('GOLDEN_MASK'), 'Blanks')
-
-
 def copy_info():
     # Copy previous 9904 dispo list to a new sheet
     info_workbook = sorted(glob(r'C:\Users\kevinto\Downloads\Search by Module Stores*.xlsx'), key=os.path.getmtime)[-2]
@@ -80,14 +73,13 @@ def copy_info():
     wb2 = xw.Book(recent_file())  # Target file
     ws1 = wb1.sheets[0]  # [1]
     ws1.api.Copy(After=wb2.sheets[0].api)
-    return ws1
 
 
 def vloop():
     # Apply VLOOKUP Formula on Status Column
     for x in range(2, len(xw.sheets[0].range('K1:K213').rows)):
         xw.sheets[0].range('K' + str(xw.sheets[0].range('K1:K213')[x].row)).value = '=VLOOKUP(C' + str(
-            x + 1) + ', DISPO' + '!' + 'A:F, 6, FALSE)'
+            x + 1) + ', Sheet2' + '!' + 'A:F, 6, FALSE)'
     # Copy vlookup on Status to ENG_LOT_OWNER
     head = []
     for i in range(2, len(xw.sheets[0].range('K1:K213').rows)):
@@ -99,7 +91,7 @@ def vloop():
         xw.sheets[0].range('J' + str(i[1:])).paste()
 
 
-def unsorted():
+def sort():
     # Sort ENG_LOT_OWNER by name
     excel = win32com.client.Dispatch("Excel.Application")
     wb_win32 = excel.Workbooks.Open(recent_file())
@@ -107,11 +99,13 @@ def unsorted():
     ws_win32.Range('J3:J213').Sort(Key1=ws_win32.Range('J1'), Order1=1, Orientation=1)
 
 
-def resort():
-    # Unsort and resort filters
-    xw.sheets[0].api.AutoFilterMode = False
+def apply_filter():
+    # Filter various headers
+    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('LOT'), Criteria1 := 'BLNK*', Operator := 2,
+                                                        Criteria2 := 'BEUVF*')
     xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('Rack'), 'NOT-IN-FAB')
     xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('DAO'), Criteria1 := '<200')
+    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('GOLDEN_MASK'), 'Blanks')
 
 
 def owner_name():
@@ -150,11 +144,11 @@ def delete_extra():
 
 
 grab_file()
-apply_filter()
+copy_info()
 vloop()
-unsorted()
-resort()
 owner_name()
+apply_filter()
+sort()
 delete_extra()
 
 if __name__ == '__main__':
