@@ -19,7 +19,6 @@ def grab_file():
     # From Chrome grab a list of COAT storage information
     driver = webdriver.Chrome(PATH)
     driver.get('https://imosc-ebiz.intel.com/imobi/module_stores.asp')
-    print(driver.page_source)
     # Select COAT module OP.9904 from drop down list and download Excel file
     driver.find_element(By.XPATH, "/html/body/div/div/div[2]/center/div[1]/select").click
     driver.find_element(By.XPATH, "/html/body/div/div/div[2]/center/div[1]/select/option[5]").click
@@ -131,6 +130,8 @@ def owner_name():
             xw.Range(filter_headers()[0] + str(index)).color = (0, 0, 204)
         elif re.match(r'^YUNPINGF', str(elem)):
             xw.Range(filter_headers()[0] + str(index)).color = (102, 0, 204)
+        elif elem == 'ENG_LOT_OWNER':
+            pass
         else:
             xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 204)
 
@@ -139,7 +140,7 @@ def delete_extra():
     # Delete more GOLDEN_MASK without Y
     for row in ws.rows:
         for cell in row:
-            if cell.value in ("BLNK339600", "BLNK339601"):
+            if sorted(set(cell.value), reverse=True) in ("BLNK339601", "BLNK339600"):
                 xw.sheets[0].range('A' + str(cell.row) + ':' + 'V' + str(cell.row)).delete()
     for index, elem in reversed(list(enumerate(xw.sheets[0].range('C1' + ':C' + str(ws.max_row)).value, start=1))):
         if re.match(r'.*CUPWASH', str(elem)):
@@ -148,16 +149,16 @@ def delete_extra():
             xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
     # Delete unnecessary rows/columns
     xw.sheets[0].range('A1:V1').delete()
+    xw.sheets[0].range('I1:I' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
+    xw.sheets[0].range('E1:E' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
     xw.sheets[0].range('B1:B' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
     xw.sheets[0].range('A1:A' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
 
 
-grab_file()
 copy_info()
 vlookup()
 copy_paste()
 owner_name()
-sort()
 apply_filter()
 delete_extra()
 
