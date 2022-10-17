@@ -1,7 +1,3 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 import os
 from glob import glob
 from openpyxl import load_workbook
@@ -12,22 +8,6 @@ import win32com.client
 # Automated 9904 disposition list for COAT Module. This is intended to grab the excel file from the Intel website, apply
 # certain filters and formula in conjuncture with previous 9904 dispo list from the past. With the previous dispo list
 # and VLOOKUP, it will apply which BLANKs belong to which engineer. It will sort and color code names for easier view.
-
-
-def grab_file():
-    PATH = "C:\Program Files (x86)\chromedriver.exe"
-    # From Chrome grab a list of COAT storage information
-    driver = webdriver.Chrome(PATH)
-    driver.get('https://imosc-ebiz.intel.com/imobi/module_stores.asp')
-    # Select COAT module OP.9904 from drop down list and download Excel file
-    driver.find_element(By.XPATH, "/html/body/div/div/div[2]/center/div[1]/select").click
-    driver.find_element(By.XPATH, "/html/body/div/div/div[2]/center/div[1]/select/option[5]").click
-    try:
-        element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "element"))
-        )
-    except:
-        driver.quit()
 
 
 def recent_file():
@@ -154,13 +134,23 @@ def delete_extra():
     xw.sheets[0].range('B1:B' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
     xw.sheets[0].range('A1:A' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
 
+    
+def stall_out():
+    import time
+    start = time.time()
+    input("Press any key to continue:")
+    end = time.time()
+    elapsed = end-start
+    print(str(elapsed) + "has elapsed")
+
 
 copy_info()
 vlookup()
 copy_paste()
+stall_out()
+delete_extra()
 owner_name()
 apply_filter()
-delete_extra()
 
 if __name__ == '__main__':
     pass
