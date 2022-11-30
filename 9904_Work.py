@@ -3,7 +3,6 @@ from glob import glob
 from openpyxl import load_workbook
 import xlwings as xw
 import re
-import win32com.client
 
 # Automated 9904 disposition list for COAT Module. This is intended to grab the excel file from the Intel website, apply
 # certain filters and formula in conjuncture with previous 9904 dispo list from the past. With the previous dispo list
@@ -69,16 +68,6 @@ def copy_paste():
         xw.sheets[0].range('J' + str(i[1:])).paste()
 
 
-def sort():
-    # Sort ENG_LOT_OWNER by name
-    excel = win32com.client.Dispatch("Excel.Application")
-    wb_win32 = excel.Workbooks.Open(recent_file())
-    ws_win32 = wb_win32.Worksheets('Sheet1')
-    ws_win32.Range('J3:J213').Sort(Key1=ws_win32.Range('J1'), Order1=1, Orientation=1)
-    wb_win32.Close(SaveChanges=1)
-    excel.Quit()
-
-
 def apply_filter():
     # Filter various headers
     #xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('LOT'), Criteria1 := 'BLNK*', Operator := 2,
@@ -90,14 +79,14 @@ def apply_filter():
 
 
 def owner_name():
-    # Color code ENG_LOT_OWNER
+    # Color code ENG_LOT_OWNER Color = (R,G,B)
     for index, elem in enumerate(xw.sheets[0].range('J1' + ':J' + str(ws.max_row)).value, start=1):
         if re.match(r'^BWOLSON', str(elem)):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 0)
         elif re.match(r'^GLUU', str(elem)):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 102, 102)
-        elif re.match(r'^HAMZAJ', str(elem)):
-            xw.Range(filter_headers()[0] + str(index)).color = (204, 204, 102)
+        elif re.match(r'^HJAVAID', str(elem)):
+            xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 204)
         elif re.match(r'^JABELARD', str(elem)):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 102)
         elif re.match(r'^JKBOSWOR', str(elem)):
@@ -113,17 +102,17 @@ def owner_name():
         elif elem == 'ENG_LOT_OWNER':
             pass
         else:
-            xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 204)
+            xw.Range(filter_headers()[0] + str(index)).color = (204, 204, 102)
 
 
 def delete_extra():
     # Delete more GOLDEN_MASK without Y
-    for row in ws.rows:
-        for cell in row:
-            if sorted(set(cell.value), reverse=True) in ("BLNK339601", "BLNK339600"):
-                xw.sheets[0].range('A' + str(cell.row) + ':' + 'V' + str(cell.row)).delete()
     for index, elem in reversed(list(enumerate(xw.sheets[0].range('C1' + ':C' + str(ws.max_row)).value, start=1))):
-        if re.match(r'.*CUPWASH', str(elem)):
+        if elem == "BLNK339600":
+            xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
+        elif elem == "BLNK339601":
+            xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
+        elif re.match(r'.*CUPWASH', str(elem)):
             xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
         elif re.match(r'.*WARM1', str(elem)):
             xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
@@ -134,23 +123,22 @@ def delete_extra():
     xw.sheets[0].range('B1:B' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
     xw.sheets[0].range('A1:A' + str(xw.sheets[0].range(Dispo_Dimensions).current_region.last_cell.row)).delete()
 
-    
+
 def stall_out():
     import time
     start = time.time()
     input("Press any key to continue:")
     end = time.time()
     elapsed = end-start
-    print(str(elapsed) + "has elapsed")
+    print(str(elapsed) + " seconds has elapsed")
 
 
 copy_info()
 vlookup()
 copy_paste()
 stall_out()
-delete_extra()
 owner_name()
-apply_filter()
+delete_extra()
 
 if __name__ == '__main__':
     pass
