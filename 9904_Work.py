@@ -1,12 +1,14 @@
+import pyautogui as auto
+import time
 import os
 from glob import glob
 from openpyxl import load_workbook
 import xlwings as xw
 import re
 
-# Automated 9904 disposition list for COAT Module. This is intended to grab the excel file from the Intel website, apply
-# certain filters and formula in conjuncture with previous 9904 dispo list from the past. With the previous dispo list
-# and VLOOKUP, it will apply which BLANKs belong to which engineer. It will sort and color code names for easier view.
+""" Automated 9904 disposition list for COAT Module. This is intended to grab the excel file from the Intel website, apply
+certain filters and formula in conjuncture with previous 9904 dispo list from the past. With the previous dispo list
+and VLOOKUP, it will apply which BLANKs belong to which engineer. It will sort and color code names for easier view. """
 
 
 def recent_file():
@@ -18,6 +20,9 @@ def recent_file():
 
 wb = load_workbook(recent_file())
 ws = wb.active
+ws.delete_cols(10)
+wb.save(recent_file())
+time.sleep(2)
 xw.Book(recent_file())
 Dispo_Dimensions = ws.dimensions
 
@@ -48,6 +53,15 @@ def copy_info():
     ws1.api.Copy(After=wb2.sheets[0].api)
     wb2.sheets[1].name = 'Sheet2'
 
+    # Change to Sheet1 and maximize excel window screen
+    time.sleep(1)
+    auto.press('F6')
+    auto.press('left')
+    auto.press('enter')
+    time.sleep(1)
+    auto.hotkey('win', 'up', presses=2)
+    time.sleep(1)
+
 
 def vlookup():
     # Apply VLOOKUP Formula on Status Column
@@ -68,36 +82,30 @@ def copy_paste():
         xw.sheets[0].range('J' + str(i[1:])).paste()
 
 
-def apply_filter():
-    # Filter various headers
-    #xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('LOT'), Criteria1 := 'BLNK*', Operator := 2,
-    #                                                   Criteria2 := 'BEUVF*')
-    # Operator: AND == 1 OR == 2
-    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('Rack'), Criteria1 := '<>NOT-IN-FAB', Operator := 1, Criteria2 := '<>TRASHED')
-    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('DAO'), Criteria1 := '<200')
-    xw.sheets[0].api.Range(Dispo_Dimensions).AutoFilter(headers('GOLDEN_MASK'), Criteria1 := '<>Y')
-
-
 def owner_name():
     # Color code ENG_LOT_OWNER Color = (R,G,B)
     for index, elem in enumerate(xw.sheets[0].range('J1' + ':J' + str(ws.max_row)).value, start=1):
-        if re.match(r'^BWOLSON', str(elem)):
+        if re.match(r'^BWOLSON',  str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 0)
-        elif re.match(r'^GLUU', str(elem)):
+        if re.match(r'^CINDYZHE',  str(elem), flags=re.IGNORECASE):
+            xw.Range(filter_headers()[0] + str(index)).color = (102, 204, 0)
+        elif re.match(r'^GLUU', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 102, 102)
-        elif re.match(r'^HJAVAID', str(elem)):
+        elif re.match(r'^HJAVAID', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 204)
-        elif re.match(r'^JABELARD', str(elem)):
+        elif re.match(r'^IECHOLS', str(elem), flags=re.IGNORECASE):
+            xw.Range(filter_headers()[0] + str(index)).color = (102, 204, 204)
+        elif re.match(r'^JABELARD', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 0, 102)
-        elif re.match(r'^JKBOSWOR', str(elem)):
+        elif re.match(r'^JKBOSWOR', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (204, 204, 0)
-        elif re.match(r'^JRNISKAL', str(elem)):
+        elif re.match(r'^JRNISKAL', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (0, 204, 0)
-        elif re.match(r'^MMARCINK', str(elem)):
+        elif re.match(r'^PSRIVAS2', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (0, 204, 204)
-        elif re.match(r'^SCPRICE', str(elem)):
+        elif re.match(r'^SCPRICE', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (0, 0, 204)
-        elif re.match(r'^YUNPINGF', str(elem)):
+        elif re.match(r'^YUNPINGF', str(elem), flags=re.IGNORECASE):
             xw.Range(filter_headers()[0] + str(index)).color = (102, 0, 204)
         elif elem == 'ENG_LOT_OWNER':
             pass
@@ -108,9 +116,7 @@ def owner_name():
 def delete_extra():
     # Delete more GOLDEN_MASK without Y
     for index, elem in reversed(list(enumerate(xw.sheets[0].range('C1' + ':C' + str(ws.max_row)).value, start=1))):
-        if elem == "BLNK339600":
-            xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
-        elif elem == "BLNK339601":
+        if elem == "BLNK408215": #PEB GOLDEN MASK MONITOR
             xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
         elif re.match(r'.*CUPWASH', str(elem)):
             xw.sheets[0].range('A' + str(index) + ':' + 'V' + str(index)).delete()
@@ -125,12 +131,13 @@ def delete_extra():
 
 
 def stall_out():
-    import time
     start = time.time()
     input("Press any key to continue:")
     end = time.time()
     elapsed = end-start
-    print(str(elapsed) + " seconds has elapsed")
+    elapsed = elapsed / 60
+    elapsed = round(elapsed, 2)
+    print(str(elapsed) + " minutes has elapsed")
 
 
 copy_info()
